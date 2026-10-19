@@ -48,6 +48,15 @@ void deos_route_message(const deos_message_t *msg,
           deos_command_name(msg->service, msg->command), msg->command,
           deos_class_name(msg->message_class), msg->sequence, msg->payload_len);
 
+  if (msg->destination == DEOS_NODE_CAN_BROADCAST) {
+    deos_dispatch_local(msg);
+    if (incoming_transport != DEOS_TRANSPORT_CAN_FD &&
+        transport_tx_registry[DEOS_TRANSPORT_CAN_FD] != NULL) {
+      transport_tx_registry[DEOS_TRANSPORT_CAN_FD](msg);
+    }
+    return;
+  }
+
   if (!app_route_lookup) {
     LOG_WRN("[ROUTER !! DUSURULDU (DROP)] %s (0x%02X) -> %s (0x%02X) | Neden: "
             "Uygulama rota politikasi (c_routing_policy) tanimlamamis!",
@@ -93,13 +102,6 @@ void deos_route_message(const deos_message_t *msg,
       target_transport != incoming_transport &&
       target_transport < DEOS_TRANSPORT_COUNT &&
       transport_tx_registry[target_transport] != NULL) {
-
-    /* If destination is a CAN broadcast and local node is interested, also
-     * deliver locally */
-    if (msg->destination == DEOS_NODE_CAN_BROADCAST &&
-        deos_is_local_node(msg->destination)) {
-      deos_dispatch_local(msg);
-    }
 
     LOG_INF("[ROUTER] %s (0x%02X) -> %s (0x%02X) | Hat: [%s -> %s] | Srv: %s | "
             "Cmd: %s (0x%02X)",
