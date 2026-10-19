@@ -2,10 +2,28 @@
 #include "deos_internal.h"
 #include <zephyr/logging/log.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 #include <errno.h>
 #include <string.h>
 
 LOG_MODULE_REGISTER(deos_network, LOG_LEVEL_INF);
+
+static atomic_t local_node_states[DEOS_MAX_LOCAL_NODES];
+
+int deos_get_local_node_state(deos_node_id_t node_id, deos_state_t *state)
+{
+    if (!state) {
+        return -EINVAL;
+    }
+
+    int idx = deos_get_local_node_index(node_id);
+    if (idx < 0) {
+        return -EPERM;
+    }
+
+    *state = (deos_state_t)atomic_get(&local_node_states[idx]);
+    return 0;
+}
 
 int deos_send_ping(
     deos_node_id_t destination,
@@ -36,12 +54,15 @@ int deos_send_heartbeat_from_node(deos_node_id_t source_node, deos_state_t curre
         return -EPERM;
     }
 
+    int idx = deos_get_local_node_index(source_node);
+    atomic_set(&local_node_states[idx], (atomic_val_t)current_state);
+
     struct deos_heartbeat_payload payload;
     payload.current_state = current_state;
 
     return deos_send_from_node(
         source_node,
-        DEOS_NODE_BROADCAST,
+        DEOS_NODE_CAN_BROADCAST,
         DEOS_PRIO_NETWORK,
         DEOS_CLASS_NETWORK,
         DEOS_SERVICE_SYSTEM,

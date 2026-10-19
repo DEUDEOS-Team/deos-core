@@ -282,7 +282,11 @@ void deos_subscription_process(void)
             } else if (entry.service == DEOS_SERVICE_SYSTEM && entry.command == DEOS_CMD_SYSTEM_HEARTBEAT) {
                 /* Built-in core heartbeat delivery to subscriber */
                 struct deos_heartbeat_payload hb_payload;
-                hb_payload.current_state = DEOS_STATE_READY;
+                deos_state_t current_state;
+                if (deos_get_local_node_state(entry.local_node, &current_state) != 0) {
+                    current_state = DEOS_STATE_UNKNOWN;
+                }
+                hb_payload.current_state = (uint8_t)current_state;
                 deos_send_from_node(entry.local_node, entry.subscriber_node,
                                     DEOS_PRIO_NETWORK, DEOS_CLASS_NETWORK,
                                     DEOS_SERVICE_SYSTEM, DEOS_CMD_SYSTEM_HEARTBEAT,
@@ -438,7 +442,11 @@ int deos_subscription_notify_change_for_node(deos_node_id_t local_node,
             }
         } else if (targets[i].service == DEOS_SERVICE_SYSTEM && targets[i].command == DEOS_CMD_SYSTEM_HEARTBEAT) {
             struct deos_heartbeat_payload hb_payload;
-            hb_payload.current_state = DEOS_STATE_READY;
+            deos_state_t current_state;
+            if (deos_get_local_node_state(targets[i].local_node, &current_state) != 0) {
+                current_state = DEOS_STATE_UNKNOWN;
+            }
+            hb_payload.current_state = (uint8_t)current_state;
             deos_send_from_node(targets[i].local_node, targets[i].subscriber_node,
                                 DEOS_PRIO_NETWORK, DEOS_CLASS_NETWORK,
                                 DEOS_SERVICE_SYSTEM, DEOS_CMD_SYSTEM_HEARTBEAT,
