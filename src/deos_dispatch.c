@@ -215,11 +215,36 @@ void deos_dispatch(const deos_message_t *msg, deos_transport_t incoming_transpor
     if (config && config->router_enabled) {
         deos_route_message(msg, incoming_transport);
     } else {
-        /* Non-router endpoint node: process incoming message only if local or broadcast */
-        if (deos_is_local_node(msg->destination) || 
-            msg->destination == DEOS_NODE_GLOBAL_BROADCAST || 
-            msg->destination == DEOS_NODE_CAN_BROADCAST) {
-            deos_dispatch_local(msg);
+        /* Non-router endpoint node: */
+        if (incoming_transport == DEOS_TRANSPORT_LOCAL) {
+            /* Outbound message originating locally */
+            if (deos_is_local_node(msg->destination)) {
+                /* Target is a local hosted node on this board */
+                deos_dispatch_local(msg);
+            } else if (msg->destination == DEOS_NODE_GLOBAL_BROADCAST || 
+                       msg->destination == DEOS_NODE_CAN_BROADCAST) {
+                /* Broadcast: deliver to local node AND transmit via physical CAN bus */
+                deos_dispatch_local(msg);
+                deos_transport_tx_fn_t can_tx = deos_router_get_transport(DEOS_TRANSPORT_CAN_FD);
+                if (can_tx) {
+                    can_tx(msg);
+                }
+            } else {
+                /* Unicast to external node: transmit via CAN-FD */
+                deos_transport_tx_fn_t can_tx = deos_router_get_transport(DEOS_TRANSPORT_CAN_FD);
+                if (can_tx) {
+                    can_tx(msg);
+                } else {
+                    LOG_WRN("Endpoint drop: No CAN transport registered to send to 0x%02X", msg->destination);
+                }
+            }
+        } else {
+            /* Inbound message arriving from physical transport (CAN-FD) */
+            if (deos_is_local_node(msg->destination) || 
+                msg->destination == DEOS_NODE_GLOBAL_BROADCAST || 
+                msg->destination == DEOS_NODE_CAN_BROADCAST) {
+                deos_dispatch_local(msg);
+            }
         }
     }
 }

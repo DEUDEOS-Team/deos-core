@@ -227,6 +227,14 @@ int deos_router_register_transport(deos_transport_t transport,
                                    deos_transport_tx_fn_t tx_fn);
 
 /**
+ * @brief Get registered transport TX function.
+ *
+ * @param transport The transport ID.
+ * @return TX function pointer or NULL if not registered.
+ */
+deos_transport_tx_fn_t deos_router_get_transport(deos_transport_t transport);
+
+/**
  * @brief Lookup function pointer type for dynamic routing.
  */
 typedef deos_transport_t (*deos_router_lookup_fn_t)(deos_node_id_t destination);

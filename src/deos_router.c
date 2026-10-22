@@ -37,6 +37,13 @@ int deos_router_register_transport(deos_transport_t transport,
   return 0;
 }
 
+deos_transport_tx_fn_t deos_router_get_transport(deos_transport_t transport) {
+  if (transport >= DEOS_TRANSPORT_COUNT) {
+    return NULL;
+  }
+  return transport_tx_registry[transport];
+}
+
 void deos_route_message(const deos_message_t *msg,
                         deos_transport_t incoming_transport) {
   LOG_INF("[ROUTER >> GELEN] %s (0x%02X) -> %s (0x%02X) | Hat: %s | Srv: %s | "

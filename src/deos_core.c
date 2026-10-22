@@ -54,12 +54,10 @@ int deos_init(const struct deos_config *config)
         return ret;
     }
 
-    if (core_config.router_enabled) {
-        ret = deos_router_init();
-        if (ret != 0) {
-            LOG_ERR("Failed to init router");
-            return ret;
-        }
+    ret = deos_router_init();
+    if (ret != 0) {
+        LOG_ERR("Failed to init router");
+        return ret;
     }
 
     ret = deos_subscription_init();

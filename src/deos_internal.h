@@ -2,6 +2,7 @@
 #define DEOS_INTERNAL_H
 
 #include <deos/deos_types.h>
+#include <deos/deos.h>
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -74,6 +75,7 @@ void deos_handle_get_node_info(const deos_message_t *msg);
  */
 int deos_router_init(void);
 void deos_route_message(const deos_message_t *msg, deos_transport_t incoming_transport);
+deos_transport_tx_fn_t deos_router_get_transport(deos_transport_t transport);
 
 /*
  * Fault Management (deos_fault.c)
