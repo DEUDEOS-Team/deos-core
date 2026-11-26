@@ -46,7 +46,7 @@ deos_transport_tx_fn_t deos_router_get_transport(deos_transport_t transport) {
 
 void deos_route_message(const deos_message_t *msg,
                         deos_transport_t incoming_transport) {
-  LOG_INF("[ROUTER >> GELEN] %s (0x%02X) -> %s (0x%02X) | Hat: %s | Srv: %s | "
+  LOG_DBG("[ROUTER >> GELEN] %s (0x%02X) -> %s (0x%02X) | Hat: %s | Srv: %s | "
           "Cmd: %s (0x%02X) | Cls: %s | Seq: %u | Boyut: %d B",
           deos_node_name(msg->source), msg->source,
           deos_node_name(msg->destination), msg->destination,
@@ -56,6 +56,15 @@ void deos_route_message(const deos_message_t *msg,
           deos_class_name(msg->message_class), msg->sequence, msg->payload_len);
 
   if (msg->destination == DEOS_NODE_CAN_BROADCAST) {
+    LOG_INF("[ROUTER -> CAN YAYIN] %s (0x%02X) -> CAN_BROADCAST (0xFE) | "
+            "Hat: %s | Srv: %s | Cmd: %s (0x%02X) | Cls: %s | Seq: %u | "
+            "Boyut: %d B",
+            deos_node_name(msg->source), msg->source,
+            deos_transport_name(incoming_transport),
+            deos_service_name(msg->service),
+            deos_command_name(msg->service, msg->command), msg->command,
+            deos_class_name(msg->message_class), msg->sequence,
+            msg->payload_len);
     deos_dispatch_local(msg);
     if (incoming_transport != DEOS_TRANSPORT_CAN_FD &&
         transport_tx_registry[DEOS_TRANSPORT_CAN_FD] != NULL) {
@@ -76,21 +85,28 @@ void deos_route_message(const deos_message_t *msg,
   deos_transport_t target_transport = app_route_lookup(msg->destination);
 
   if (target_transport == DEOS_TRANSPORT_LOCAL) {
-    LOG_INF("[ROUTER -> DUGUM ICI ISLENDI (LOCAL)] %s (0x%02X) -> %s (0x%02X) "
-            "| Cmd: %s (0x%02X) | Yerel Handler'a teslim edildi",
+    LOG_INF("[ROUTER -> LOCAL] %s (0x%02X) -> %s (0x%02X) | Hat: %s | "
+            "Srv: %s | Cmd: %s (0x%02X) | Cls: %s | Seq: %u | Boyut: %d B",
             deos_node_name(msg->source), msg->source,
             deos_node_name(msg->destination), msg->destination,
-            deos_command_name(msg->service, msg->command), msg->command);
+            deos_transport_name(incoming_transport),
+            deos_service_name(msg->service),
+            deos_command_name(msg->service, msg->command), msg->command,
+            deos_class_name(msg->message_class), msg->sequence,
+            msg->payload_len);
     deos_dispatch_local(msg);
     return;
   }
 
   if (target_transport == DEOS_TRANSPORT_BROADCAST_ALL) {
-    LOG_INF("[ROUTER -> GENEL YAYIN (BROADCAST)] %s (0x%02X) -> TUM DUGUMLER | "
-            "Cmd: %s (0x%02X) | Gelen hat (%s) haric tum hatlara basiliyor",
+    LOG_INF("[ROUTER -> BROADCAST] %s (0x%02X) -> TUM DUGUMLER | Hat: %s | "
+            "Srv: %s | Cmd: %s (0x%02X) | Cls: %s | Seq: %u | Boyut: %d B",
             deos_node_name(msg->source), msg->source,
+            deos_transport_name(incoming_transport),
+            deos_service_name(msg->service),
             deos_command_name(msg->service, msg->command), msg->command,
-            deos_transport_name(incoming_transport));
+            deos_class_name(msg->message_class), msg->sequence,
+            msg->payload_len);
     /* Run local handlers */
     deos_dispatch_local(msg);
 
@@ -111,13 +127,15 @@ void deos_route_message(const deos_message_t *msg,
       transport_tx_registry[target_transport] != NULL) {
 
     LOG_INF("[ROUTER] %s (0x%02X) -> %s (0x%02X) | Hat: [%s -> %s] | Srv: %s | "
-            "Cmd: %s (0x%02X)",
+            "Cmd: %s (0x%02X) | Cls: %s | Seq: %u | Boyut: %d B",
             deos_node_name(msg->source), msg->source,
             deos_node_name(msg->destination), msg->destination,
             deos_transport_name(incoming_transport),
             deos_transport_name(target_transport),
             deos_service_name(msg->service),
-            deos_command_name(msg->service, msg->command), msg->command);
+            deos_command_name(msg->service, msg->command), msg->command,
+            deos_class_name(msg->message_class), msg->sequence,
+            msg->payload_len);
     transport_tx_registry[target_transport](msg);
   } else {
     if (target_transport == incoming_transport) {
