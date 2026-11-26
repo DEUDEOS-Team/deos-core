@@ -49,6 +49,27 @@ int deos_subscription_start(void)
     return 0;
 }
 
+static void send_subscribe_response(const deos_message_t *msg,
+                                    deos_result_t result,
+                                    uint8_t target_service,
+                                    uint8_t target_command,
+                                    uint16_t actual_interval_ms)
+{
+    /*
+     * deos_send_response() already prepends payload[0] = (uint8_t)result.
+     * Pass only the 4-byte body following result_code so the wire payload is
+     * exactly 5 bytes matching struct deos_subscribe_resp_payload (ICD).
+     */
+    struct deos_subscribe_resp_payload resp = {0};
+    resp.result_code = (uint8_t)result;
+    resp.target_service = target_service;
+    resp.target_command = target_command;
+    deos_put_u16_le((uint8_t *)&resp.actual_interval_ms, actual_interval_ms);
+
+    deos_send_response(msg, result, &resp.target_service,
+                       sizeof(resp) - sizeof(resp.result_code));
+}
+
 void deos_subscription_handle_subscribe(const deos_message_t *msg)
 {
     if (!msg) return;
@@ -105,12 +126,8 @@ void deos_subscription_handle_subscribe(const deos_message_t *msg)
         LOG_WRN("Subscription rejected: Node 0x%02X has no handler for Svc: 0x%02X, Cmd: 0x%02X",
                 local_node, req->target_service, req->target_command);
         deos_fault_raise_for_node(local_node, DEOS_FAULT_SUB_HANDLER_NOT_FOUND, DEOS_FAULT_SEVERITY_WARNING);
-        struct deos_subscribe_resp_payload resp = {0};
-        resp.result_code = DEOS_RESULT_UNSUPPORTED;
-        resp.target_service = req->target_service;
-        resp.target_command = req->target_command;
-        deos_put_u16_le((uint8_t *)&resp.actual_interval_ms, 0);
-        deos_send_response(msg, DEOS_RESULT_UNSUPPORTED, &resp, sizeof(resp));
+        send_subscribe_response(msg, DEOS_RESULT_UNSUPPORTED,
+                                req->target_service, req->target_command, 0);
         return;
     }
 
@@ -143,12 +160,8 @@ void deos_subscription_handle_subscribe(const deos_message_t *msg)
         k_mutex_unlock(&sub_lock);
         LOG_WRN("Subscription table full on node 0x%02X", local_node);
         deos_fault_raise_for_node(local_node, DEOS_FAULT_SUB_TABLE_FULL, DEOS_FAULT_SEVERITY_WARNING);
-        struct deos_subscribe_resp_payload resp = {0};
-        resp.result_code = DEOS_RESULT_BUSY;
-        resp.target_service = req->target_service;
-        resp.target_command = req->target_command;
-        deos_put_u16_le((uint8_t *)&resp.actual_interval_ms, 0);
-        deos_send_response(msg, DEOS_RESULT_BUSY, &resp, sizeof(resp));
+        send_subscribe_response(msg, DEOS_RESULT_BUSY,
+                                req->target_service, req->target_command, 0);
         return;
     }
 
@@ -167,13 +180,8 @@ void deos_subscription_handle_subscribe(const deos_message_t *msg)
     LOG_INF("Node 0x%02X subscribed 0x%02X to Svc: 0x%02X Cmd: 0x%02X @ %d ms (TTL: %d s)",
             local_node, subscriber, req->target_service, req->target_command, actual_interval, lease_ttl_s);
 
-    struct deos_subscribe_resp_payload resp = {0};
-    resp.result_code = DEOS_RESULT_SUCCESS;
-    resp.target_service = req->target_service;
-    resp.target_command = req->target_command;
-    deos_put_u16_le((uint8_t *)&resp.actual_interval_ms, actual_interval);
-
-    deos_send_response(msg, DEOS_RESULT_SUCCESS, &resp, sizeof(resp));
+    send_subscribe_response(msg, DEOS_RESULT_SUCCESS,
+                            req->target_service, req->target_command, actual_interval);
 }
 
 void deos_subscription_handle_unsubscribe(const deos_message_t *msg)

@@ -270,7 +270,7 @@ void deos_feed_message(const deos_message_t *msg, deos_transport_t transport)
  * CAN-FD, LoRa veya Ethernet suruculeri disaridan ham byte dizisi aldiklarinda
  * bu fonksiyonu cagirirlar.
  * Fonksiyon sirasiyla:
- * 1. Ham veriyi ve CRC'yi deşifre eder (`deos_frame_decode`).
+ * 1. Ham çerçeveyi (başlık, sürüm ve uzunluk) doğrular ve çözer (`deos_frame_decode`).
  * 2. Eger paket bozuksa hata uretir (`DEOS_FAULT_FRAME_DECODE_FAILED`).
  * 3. Paket saglamsa `deos_dispatch()` cagirarak yonlendirme/dagitim zincirini baslatir.
  * 

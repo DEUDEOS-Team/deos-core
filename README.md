@@ -379,7 +379,7 @@ void init_router(void)
 // 7. LoRa veya Ethernet'ten ham byte geldiginde sisteme besleme:
 void on_lora_bytes_received(uint8_t *buffer, size_t len)
 {
-    // Ham veriyi CRC kontroluyle cozer, gecersizse fault uretir, saglamsa yonlendirir
+    // Ham veriyi baslik, surum ve uzunluk kontroluyle cozer, gecersizse fault uretir, saglamsa yonlendirir
     deos_feed_frame(buffer, len, DEOS_TRANSPORT_UART_LORA);
 }
 ```

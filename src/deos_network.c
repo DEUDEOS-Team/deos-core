@@ -225,7 +225,7 @@ void deos_handle_get_node_info(const deos_message_t *msg)
 
     resp.result_code   = (uint8_t)DEOS_RESULT_SUCCESS;
     resp.node_id       = (uint8_t)msg->destination;
-    resp.proto_version = DEOS_PROTOCOL_VERSION; /* 0x11 = v1.1 */
+    resp.proto_version = DEOS_PROTOCOL_VERSION; /* 0x12 = v1.2 */
     resp.reserved      = 0x00;
 
     if (local_node_info_tbl[idx].configured) {
